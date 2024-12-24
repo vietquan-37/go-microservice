@@ -17,13 +17,14 @@ import (
 )
 
 var (
-	amqpUser    = common.EnvString("RABBITMQ_USER", "guest")
-	amqpPass    = common.EnvString("RABBITMQ_PASS", "guest")
-	amqpHost    = common.EnvString("RABBITMQ_HOST", "localhost")
-	amqpPort    = common.EnvString("RABBITMQ_PORT", "5672")
-	serviceName = "payments"
-	grpcAddr    = common.EnvString("GRPC_ADDR", "localhost:2001")
-	consulAddr  = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	amqpUser     = common.EnvString("RABBITMQ_USER", "guest")
+	amqpPass     = common.EnvString("RABBITMQ_PASS", "guest")
+	amqpHost     = common.EnvString("RABBITMQ_HOST", "localhost")
+	amqpPort     = common.EnvString("RABBITMQ_PORT", "5672")
+	serviceName  = "payments"
+	grpcAddr     = common.EnvString("GRPC_ADDR", "localhost:2001")
+	consulAddr   = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	stripeApiKey = common.EnvString("STRIPE_API_KEY", "")
 )
 
 func main() {
