@@ -3,10 +3,15 @@ option go_package="github.com/vietquan-37/go-microservice/commons/api";
 package api;
 service OrderService{
   rpc CreateOrder(CreateOrderRequest)returns(Order);
+  rpc GetOrder(GetOrderRequest)returns(Order);
 }
 message CreateOrderRequest{
   string customerID=1;
   repeated Items items=2;
+}
+message GetOrderRequest{
+  string orderID=1;
+  string customerID=2;
 }
 message Items{
   string ID=1;

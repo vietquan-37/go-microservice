@@ -27,8 +27,14 @@ func NewGrpcHandler(grpcServer *grpc.Server, service interfaces.OrderService, ch
 
 func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*pb.Order, error) {
 	log.Println("New order received !")
-	o := &pb.Order{
-		ID: "42",
+	items, err := h.service.ValidateOrder(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	o, err := h.service.CreateOrder(ctx, p, items)
+	if err != nil {
+		return nil, err
 	}
 
 	marshalledOrder, err := json.Marshal(o)
@@ -45,5 +51,13 @@ func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest)
 		Body:         marshalledOrder,
 		DeliveryMode: amqp.Persistent,
 	})
+	return o, nil
+}
+func (h *grpcHandler) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Order, error) {
+	o, err := h.service.GetOrder(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
 	return o, nil
 }

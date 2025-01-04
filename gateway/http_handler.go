@@ -21,7 +21,9 @@ func NewHandler(ordersGateway gateway.OrdersGateway) *handler {
 	}
 }
 func (h *handler) registerRoutes(mux *http.ServeMux) {
+	mux.Handle("/", http.FileServer(http.Dir("public")))
 	mux.HandleFunc("POST /api/customer/{customerID}/orders", h.HandleCreateOrder)
+	mux.HandleFunc("GET /api/customers/{customerID}/orders/{orderID}", h.HandleGetOrder)
 }
 func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	customerID := r.PathValue("customerID")
@@ -37,6 +39,25 @@ func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	o, err := h.gateway.CreateOrder(r.Context(), &pb.CreateOrderRequest{
 		CustomerID: customerID,
 		Items:      items,
+	})
+	rStatus := status.Convert(err)
+	if rStatus != nil {
+		if rStatus.Code() != codes.InvalidArgument {
+			common.WriteError(w, http.StatusBadRequest, rStatus.Message())
+			return
+		}
+		common.WriteError(w, http.StatusInternalServerError, rStatus.Message())
+		return
+	}
+
+	common.WriteJson(w, http.StatusOK, o)
+}
+func (h *handler) HandleGetOrder(w http.ResponseWriter, r *http.Request) {
+	customerID := r.PathValue("customerID")
+	orderID := r.PathValue("orderID")
+	o, err := h.gateway.GetOrder(r.Context(), &pb.GetOrderRequest{
+		CustomerID: customerID,
+		OrderID:    orderID,
 	})
 	rStatus := status.Convert(err)
 	if rStatus != nil {
