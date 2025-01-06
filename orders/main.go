@@ -7,6 +7,8 @@ import (
 	"github.com/vietquan-37/go-microservice/commons/broker"
 	"github.com/vietquan-37/go-microservice/commons/discovery"
 	"github.com/vietquan-37/go-microservice/commons/discovery/consul"
+	"github.com/vietquan-37/go-microservice/orders/consumer"
+	"github.com/vietquan-37/go-microservice/orders/gateway"
 	"github.com/vietquan-37/go-microservice/orders/handler"
 	"github.com/vietquan-37/go-microservice/orders/service"
 	"github.com/vietquan-37/go-microservice/orders/storage"
@@ -24,9 +26,14 @@ var (
 	serviceName = "orders"
 	grpcAddr    = common.EnvString("GRPC_ADDR", "localhost:2000")
 	consulAddr  = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	JaegerAddr  = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 
 func main() {
+	err := common.SetGlobalTracer(context.TODO(), serviceName, JaegerAddr)
+	if err != nil {
+		log.Fatalf("fail to init tracer: %v", err)
+	}
 	registry, err := consul.NewRegistry(consulAddr, serviceName)
 	if err != nil {
 		panic(err)
@@ -50,6 +57,7 @@ func main() {
 		close()
 		ch.Close()
 	}()
+
 	grpcServer := grpc.NewServer()
 	l, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
@@ -57,9 +65,12 @@ func main() {
 	}
 	defer l.Close()
 	store := storage.NewStore()
-	svc := service.NewService(store)
-	handler.NewGrpcHandler(grpcServer, svc, ch)
-	//svc.CreateOrder(context.Background())
+	gateways := gateway.NewGateway(registry)
+	svc := service.NewService(store, gateways)
+	telemetryService := NewTelemetryMiddleware(svc)
+	amqpConsumer := consumer.NewConsumer(telemetryService)
+	go amqpConsumer.Listen(ch)
+	handler.NewGrpcHandler(grpcServer, telemetryService, ch)
 	log.Println("Grpc server started at", grpcAddr)
 	if err := grpcServer.Serve(l); err != nil {
 		log.Fatal(err)

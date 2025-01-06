@@ -6,8 +6,26 @@ services:
     ports:
       - 8500:8500
       - 8600:8600/udp
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5437:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=stock_db
+    volumes:
+      - stock-data:/var/lib/postgresql/data
   rabbitmq:
     image: "rabbitmq:3-management"
     ports:
       - "15672:15672"
       - "5672:5672"
+volumes:
+  stock-data:
+

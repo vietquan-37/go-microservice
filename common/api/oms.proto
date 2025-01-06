@@ -4,6 +4,10 @@ package api;
 service OrderService{
   rpc CreateOrder(CreateOrderRequest)returns(Order);
   rpc GetOrder(GetOrderRequest)returns(Order);
+  rpc UpdateOrder(Order)returns(Order);
+}
+service StockService{
+rpc CheckStock(CheckStockRequest)returns(CheckStockResponse);
 }
 message CreateOrderRequest{
   string customerID=1;
@@ -14,7 +18,7 @@ message GetOrderRequest{
   string customerID=2;
 }
 message Items{
-  string ID=1;
+  int32 ID=1;
   string Name=2;
   int32 Quantity=3;
   string PriceID=4;
@@ -24,4 +28,12 @@ message Order{
   string customerID=2;
   string Status=3;
   repeated Items items=4;
+  string PaymentLink=5;
+}
+message CheckStockRequest{
+  repeated Items items= 1;
+}
+message CheckStockResponse{
+  bool inStock=1;
+  repeated Items items=2;
 }

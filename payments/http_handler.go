@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/webhook"
+	pb "github.com/vietquan-37/go-microservice/commons/api"
+	"github.com/vietquan-37/go-microservice/commons/broker"
+	"go.opentelemetry.io/otel"
+	"time"
 
 	"io"
 	"log"
@@ -52,7 +57,34 @@ func (h *PaymentHttpHandler) handleCheckoutWebhook(w http.ResponseWriter, r *htt
 		}
 		if session.PaymentStatus == "paid" {
 			log.Printf("Payment successfull for %s", session.ID)
+			orderID := session.Metadata["orderID"]
+			customerID := session.Metadata["customerID"]
 			//publish message
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			o := &pb.Order{
+				ID:          orderID,
+				CustomerID:  customerID,
+				Status:      "paid",
+				PaymentLink: "",
+			}
+			marshalledOrder, err := json.Marshal(o)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			tr := otel.Tracer("amqp")
+			amqpContext, messageSpan := tr.Start(ctx, fmt.Sprintf("AMQP - Publishing %s", broker.OrderPaidEvent))
+			defer messageSpan.End()
+			header := broker.InjectAmqpHeader(amqpContext)
+
+			//publish to message to exchange fan-out, because i want broadcast this
+			h.channel.PublishWithContext(amqpContext, broker.OrderPaidEvent, "", false, false, amqp.Publishing{
+				ContentType:  "application/json",
+				Body:         marshalledOrder,
+				DeliveryMode: amqp.Persistent,
+				Headers:      header,
+			})
+			log.Print("message publish order.paid")
 		}
 	}
 

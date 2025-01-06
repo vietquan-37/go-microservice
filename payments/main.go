@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
+	"github.com/vietquan-37/go-microservice/payments/gateway"
 	"net/http"
 
 	common "github.com/vietquan-37/go-microservice/commons"
@@ -29,10 +30,15 @@ var (
 	consulAddr           = common.EnvString("CONSUL_ADDR", "localhost:8500")
 	stripeApiKey         = common.EnvString("STRIPE_API_KEY", "")
 	httpAddr             = common.EnvString("HTTP_ADDR", "localhost:8081")
-	endpointStripeSecret = common.EnvString("STRIPE_SECRET", "whsec_4739a0edd9d7d631b2d6bb6f6a2bdb4e32f510da622622efc1527461a5269eac")
+	endpointStripeSecret = common.EnvString("STRIPE_SECRET", "")
+	JaegerAddr           = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 
 func main() {
+	err := common.SetGlobalTracer(context.TODO(), serviceName, JaegerAddr)
+	if err != nil {
+		log.Fatalf("fail to init tracer: %v", err)
+	}
 	registry, err := consul.NewRegistry(consulAddr, serviceName)
 	if err != nil {
 		panic(err)
@@ -59,10 +65,12 @@ func main() {
 		ch.Close()
 	}()
 	stripeP := stripeProccessor.NewProcessor()
-	svc := service.NewService(stripeP)
-	amqpConsumer := consumer.NewConsumer(svc)
+	g := gateway.NewGrpcGateway(registry)
+	svc := service.NewService(stripeP, g)
+	telemetrySvc := NewTelemetryMiddleware(svc)
+	amqpConsumer := consumer.NewConsumer(telemetrySvc)
 	go amqpConsumer.Listen(ch)
-	//http server
+	//http server webhhok
 	mux := http.NewServeMux()
 	httpserver := NewPaymentHttpHandler(ch)
 	httpserver.registerRoutes(mux)

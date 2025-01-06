@@ -17,9 +17,14 @@ var (
 	httpAddr    = common.EnvString("HTTP_ADDR", ":8080")
 	consulAddr  = common.EnvString("CONSUL_ADDR", "localhost:8500")
 	serviceName = "gateway"
+	JaegerAddr  = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 
 func main() {
+	err := common.SetGlobalTracer(context.TODO(), serviceName, JaegerAddr)
+	if err != nil {
+		log.Fatalf("fail to init tracer: %v", err)
+	}
 	registry, err := consul.NewRegistry(consulAddr, serviceName)
 	if err != nil {
 		panic(err)

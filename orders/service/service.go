@@ -4,16 +4,18 @@ import (
 	"context"
 	common "github.com/vietquan-37/go-microservice/commons"
 	pb "github.com/vietquan-37/go-microservice/commons/api"
+	"github.com/vietquan-37/go-microservice/orders/gateway"
 	"github.com/vietquan-37/go-microservice/orders/interfaces"
 	"log"
 )
 
 type service struct {
-	store interfaces.OrderStore
+	store   interfaces.OrderStore
+	gateway gateway.StockGateway
 }
 
-func NewService(store interfaces.OrderStore) *service {
-	return &service{store}
+func NewService(store interfaces.OrderStore, stockGateway gateway.StockGateway) *service {
+	return &service{store, stockGateway}
 }
 func (s *service) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest, items []*pb.Items) (*pb.Order, error) {
 	p.Items = items
@@ -32,21 +34,25 @@ func (s *service) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Orde
 	}
 	return o, nil
 }
+func (s *service) UpdateOrder(ctx context.Context, p *pb.Order) (*pb.Order, error) {
+	err := s.store.Update(ctx, p.ID, p)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
 func (s *service) ValidateOrder(ctx context.Context, p *pb.CreateOrderRequest) ([]*pb.Items, error) {
 	if len(p.Items) == 0 {
 		return nil, common.ErrNoItems
 	}
 	mergedItems := mergeItems(p.Items)
 
-	//validate with stock service
-	// temporary to test the payment
-	var items []*pb.Items
-	for _, item := range mergedItems {
-		items = append(items, &pb.Items{
-			PriceID:  "price_1Qa6aTDWJlYhjZLPkH1W2KJy",
-			ID:       item.ID,
-			Quantity: item.Quantity,
-		})
+	inStock, items, err := s.gateway.CheckIfItemIsInStock(ctx, mergedItems)
+	if err != nil {
+		return nil, err
+	}
+	if !inStock {
+		return items, common.ErrNoItems
 	}
 	log.Print(items)
 	return items, nil
