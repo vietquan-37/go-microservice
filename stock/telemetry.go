@@ -18,7 +18,7 @@ func NewTelemetryMiddleware(service interfaces.StockService) *TelemetryMiddlewar
 	}
 
 }
-func (s *TelemetryMiddleware) CheckItemInStock(ctx context.Context, request *pb.CheckStockRequest) (bool, []*pb.Items, error) {
+func (s *TelemetryMiddleware) CheckItemInStock(ctx context.Context, request *pb.CheckStockRequest) ([]*pb.Items, error) {
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(fmt.Sprintf("CheckItemInStock: %v", request))
 	return s.service.CheckItemInStock(ctx, request)

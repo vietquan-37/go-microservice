@@ -55,17 +55,28 @@ func (h *PaymentHttpHandler) handleCheckoutWebhook(w http.ResponseWriter, r *htt
 			fmt.Fprintf(os.Stderr, "Error unmarshalling checkout session data: %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
 		}
+
 		if session.PaymentStatus == "paid" {
 			log.Printf("Payment successfull for %s", session.ID)
 			orderID := session.Metadata["orderID"]
 			customerID := session.Metadata["customerID"]
+			items := session.Metadata["items"]
 			//publish message
+			var orderItems []*pb.Items // Replace with your actual item type
+			if err := json.Unmarshal([]byte(items), &orderItems); err != nil {
+				log.Printf("Error unmarshalling items metadata: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+
 			o := &pb.Order{
 				ID:          orderID,
 				CustomerID:  customerID,
 				Status:      "paid",
+				Items:       orderItems,
 				PaymentLink: "",
 			}
 			marshalledOrder, err := json.Marshal(o)

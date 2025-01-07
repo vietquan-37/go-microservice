@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	pb "github.com/vietquan-37/go-microservice/commons/api"
 	"github.com/vietquan-37/go-microservice/stock/interfaces"
@@ -16,29 +17,32 @@ func NewService(store interfaces.StockStore) *service {
 	return &service{store}
 }
 
-// coi lai stock
-func (s *service) CheckItemInStock(ctx context.Context, request *pb.CheckStockRequest) (bool, []*pb.Items, error) {
-	i := make(map[int32]int32, len(request.Items))
+func (s *service) CheckItemInStock(ctx context.Context, request *pb.CheckStockRequest) ([]*pb.Items, error) {
+
+	itemMap := make(map[int32]*pb.Items, len(request.Items))
+	//map store pointer value of request.Items
 	for _, item := range request.Items {
-		i[item.ID] = item.Quantity
+		itemMap[item.ID] = item
 	}
-	ids := make([]int32, 0, len(i))
-	for id := range i {
+
+	ids := make([]int32, 0, len(itemMap))
+	for id := range itemMap {
 		ids = append(ids, id)
 	}
 	stocks, err := s.store.GetItems(ctx, ids)
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
 	for _, stock := range stocks {
-		if ItemQuantity, ok := i[int32(stock.ID)]; ok {
-			if ItemQuantity > stock.Quantity {
-				return false, covertItems(stocks), nil
+		if item, ok := itemMap[int32(stock.ID)]; ok {
+			if item.Quantity > stock.Quantity {
+				return nil, fmt.Errorf("insufficient stock for product: %d", stock.ID)
 			}
-
+			//so when this update the request it update too
+			item.PriceID = stock.PriceId
 		}
 	}
-	return true, covertItems(stocks), nil
+	return request.Items, nil
 }
 
 func (s *service) DecreaseStock(ctx context.Context, items []*pb.Items) error {

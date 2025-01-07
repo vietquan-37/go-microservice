@@ -47,13 +47,11 @@ func (s *service) ValidateOrder(ctx context.Context, p *pb.CreateOrderRequest) (
 	}
 	mergedItems := mergeItems(p.Items)
 
-	inStock, items, err := s.gateway.CheckIfItemIsInStock(ctx, mergedItems)
+	items, err := s.gateway.CheckIfItemIsInStock(ctx, mergedItems)
 	if err != nil {
 		return nil, err
 	}
-	if !inStock {
-		return items, common.ErrNoItems
-	}
+
 	log.Print(items)
 	return items, nil
 }

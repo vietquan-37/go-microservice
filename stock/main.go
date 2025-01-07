@@ -6,6 +6,7 @@ import (
 	"github.com/vietquan-37/go-microservice/commons/broker"
 	"github.com/vietquan-37/go-microservice/commons/discovery"
 	"github.com/vietquan-37/go-microservice/commons/discovery/consul"
+	"github.com/vietquan-37/go-microservice/stock/consumer"
 	"github.com/vietquan-37/go-microservice/stock/handler"
 	"github.com/vietquan-37/go-microservice/stock/service"
 	"github.com/vietquan-37/go-microservice/stock/storage"
@@ -75,8 +76,8 @@ func main() {
 
 	handler.NewStockGrpcHandler(grpcServer, telemetrySvc)
 
-	//consumer := NewConsumer()
-	//go consumer.Listen(ch)
+	consumer := consumer.NewConsumer(telemetrySvc)
+	go consumer.Listen(ch)
 
 	log.Printf("Starting gRPC server: %s", grpcAddr)
 

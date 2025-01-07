@@ -6,5 +6,5 @@ import (
 )
 
 type StockGateway interface {
-	CheckIfItemIsInStock(ctx context.Context, items []*pb.Items) (bool, []*pb.Items, error)
+	CheckIfItemIsInStock(ctx context.Context, items []*pb.Items) ([]*pb.Items, error)
 }

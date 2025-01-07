@@ -34,6 +34,6 @@ message CheckStockRequest{
   repeated Items items= 1;
 }
 message CheckStockResponse{
-  bool inStock=1;
-  repeated Items items=2;
+
+  repeated Items items=1;
 }

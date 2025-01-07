@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
@@ -32,10 +33,16 @@ func (s *Stripe) CreatePaymentLink(p *pb.Order) (string, error) {
 			Quantity: stripe.Int64(int64(item.Quantity)),
 		})
 	}
+	itemsJSON, err := json.Marshal(p.Items)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize items: %w", err)
+	}
+	log.Print(p.Items)
 	params := &stripe.CheckoutSessionParams{
 		Metadata: map[string]string{
 			"orderID":    p.ID,
 			"customerID": p.CustomerID,
+			"items":      string(itemsJSON),
 		},
 		LineItems:  items,
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),

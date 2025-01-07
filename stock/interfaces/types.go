@@ -8,7 +8,7 @@ import (
 )
 
 type StockService interface {
-	CheckItemInStock(ctx context.Context, request *pb.CheckStockRequest) (bool, []*pb.Items, error)
+	CheckItemInStock(ctx context.Context, request *pb.CheckStockRequest) ([]*pb.Items, error)
 	DecreaseStock(ctx context.Context, items []*pb.Items) error
 }
 type StockStore interface {

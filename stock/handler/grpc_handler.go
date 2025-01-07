@@ -19,13 +19,13 @@ func NewStockGrpcHandler(grpcService *grpc.Server, stockService interfaces.Stock
 	pb.RegisterStockServiceServer(grpcService, handler)
 }
 func (s *StockGrpcHandler) CheckStock(ctx context.Context, p *pb.CheckStockRequest) (*pb.CheckStockResponse, error) {
-	instock, items, err := s.stockService.CheckItemInStock(ctx, p)
+	items, err := s.stockService.CheckItemInStock(ctx, p)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &pb.CheckStockResponse{
-		InStock: instock,
-		Items:   items,
+
+		Items: items,
 	}, nil
 }

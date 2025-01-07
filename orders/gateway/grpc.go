@@ -15,7 +15,7 @@ func NewGateway(registry discovery.Registry) *Gateway {
 	return &Gateway{registry}
 }
 
-func (g *Gateway) CheckIfItemIsInStock(ctx context.Context, items []*pb.Items) (bool, []*pb.Items, error) {
+func (g *Gateway) CheckIfItemIsInStock(ctx context.Context, items []*pb.Items) ([]*pb.Items, error) {
 	conn, err := discovery.ServiceConnection(context.Background(), "stock", g.registry)
 	if err != nil {
 		log.Fatalf("Failed to dial server: %v", err)
@@ -28,5 +28,5 @@ func (g *Gateway) CheckIfItemIsInStock(ctx context.Context, items []*pb.Items) (
 		Items: items,
 	})
 
-	return res.InStock, res.Items, err
+	return res.Items, err
 }
